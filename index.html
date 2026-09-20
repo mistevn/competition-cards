@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Competition Cards 参赛卡</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style id="page-rule">@page { size: letter; margin: 0; }</style>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Competition Cards<span class="zh">参赛卡</span></h1>
+    <p>Load a spreadsheet of competitors and print one filled card per row, laid out for cutting like the paper form.</p>
+  </header>
+
+  <section class="controls" aria-label="Card settings">
+    <div>
+      <h2>Load competitors</h2>
+      <div class="row">
+        <label class="filebtn">Choose .xlsx or .csv
+          <input type="file" id="file" accept=".xlsx,.xls,.csv,.tsv,.ods">
+        </label>
+        <button id="sample">Try sample data</button>
+        <button id="clear">Clear</button>
+      </div>
+      <details style="margin-top:10px">
+        <summary>Or paste rows from a spreadsheet</summary>
+        <p class="hint" style="margin:6px 0">Copy the cells including the header row and paste here.</p>
+        <textarea id="paste" placeholder="Name	ID	Age	Gender	Level	Event	Category"></textarea>
+        <div class="row" style="margin-top:6px"><button id="usePaste">Use pasted rows</button></div>
+      </details>
+    </div>
+
+    <details>
+      <summary>Spreadsheet columns</summary>
+      <p class="hint" style="margin:6px 0">Put these headers in the first row. English or Chinese headers both work; any other columns are ignored.</p>
+      <div class="tablewrap">
+      <table class="help">
+        <tr><th>Column</th><th>Also accepted</th><th>Fills</th></tr>
+        <tr><td><code>Name</code></td><td>姓名, Competitor</td><td>Name 姓名</td></tr>
+        <tr><td><code>ID</code></td><td>ID#, 参赛号, Number, Bib</td><td>ID# 参赛号</td></tr>
+        <tr><td><code>Age</code></td><td>年龄</td><td>Age 年龄</td></tr>
+        <tr><td><code>Gender</code></td><td>Sex, 性别</td><td>Gender 性别</td></tr>
+        <tr><td><code>Level</code></td><td>级别</td><td>Level 级别</td></tr>
+        <tr><td><code>Event</code></td><td>项目, Form</td><td>Event/项目</td></tr>
+        <tr><td><code>Category</code></td><td>Type, Weapon, 类别</td><td>Checkbox: Open Hand, Short, Long, or Other (拳术, 短, 长, 其他 also work)</td></tr>
+      </table>
+      </div>
+      <p class="hint" style="margin-top:8px">Instead of <code>Category</code>, you can use separate <code>Open Hand</code>, <code>Short</code>, <code>Long</code>, <code>Other</code> columns marked with x, yes, or 1.</p>
+    </details>
+
+    <div>
+      <h2>Layout</h2>
+      <div class="row">
+        <label>Paper <select id="paper"><option value="letter">US Letter</option><option value="a4">A4</option></select></label>
+        <label>Cards per page <select id="perpage"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option></select></label>
+        <label>Extra blank cards <input type="number" id="blanks" min="0" max="200" value="0"></label>
+        <button class="primary" id="print">Print cards</button>
+      </div>
+      <p class="hint" style="margin-top:8px">In the print dialog, set scale to 100% (or "Actual size") and turn off headers and footers.</p>
+    </div>
+    <p class="status" id="status" role="status">No spreadsheet loaded. Load one, or print blank cards.</p>
+  </section>
+
+  <main class="pages" id="pages"></main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
