@@ -98,6 +98,7 @@ table.help td, table.help th { border-bottom: 1px solid var(--rule); padding: 4p
 }
 .r1 { display: grid; grid-template-columns: 2.3fr 1fr; gap: 1.6cqw; }
 .r2 { display: grid; grid-template-columns: 0.8fr 1fr 1.2fr; gap: 1.6cqw; }
+.r3 { display: grid; grid-template-columns: 1.9fr 1fr; gap: 1.6cqw; }
 .boxes { font-size: 1.5cqw; display: flex; flex-wrap: wrap; align-items: center; gap: .3cqw 1cqw; white-space: nowrap; }
 .box { display: inline-flex; align-items: center; gap: .45cqw; }
 .sq {
