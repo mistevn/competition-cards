@@ -15,7 +15,7 @@
 <div class="app">
   <header>
     <h1>Competition Cards<span class="zh">参赛卡</span></h1>
-    <p>Load a spreadsheet of competitors and print one filled card per row, laid out for cutting like the paper form.</p>
+    <p>Load a spreadsheet of competitors and print one filled card per row, laid out for cutting like the paper form. Form divisions (套路组) and combat divisions (对抗组) both print from the same sheet.</p>
   </header>
 
   <section class="controls" aria-label="Card settings">
@@ -31,7 +31,7 @@
       <details style="margin-top:10px">
         <summary>Or paste rows from a spreadsheet</summary>
         <p class="hint" style="margin:6px 0">Copy the cells including the header row and paste here.</p>
-        <textarea id="paste" placeholder="Name	ID	Age	Gender	Level	Event	Category"></textarea>
+        <textarea id="paste" placeholder="Division	Name	ID	Age	Gender	Level	Event	Category	Weight"></textarea>
         <div class="row" style="margin-top:6px"><button id="usePaste">Use pasted rows</button></div>
       </details>
     </div>
@@ -42,21 +42,29 @@
       <div class="tablewrap">
       <table class="help">
         <tr><th>Column</th><th>Also accepted</th><th>Fills</th></tr>
+        <tr><td><code>Division</code></td><td>Card, Card Type, Group, 组别</td><td>Which card the row prints on: <code>Form</code> (套路) or <code>Combat</code> (对抗, Sparring, Sanda, Push Hands)</td></tr>
         <tr><td><code>Name</code></td><td>姓名, Competitor</td><td>Name 姓名</td></tr>
         <tr><td><code>ID</code></td><td>ID#, 参赛号, Number, Bib</td><td>ID# 参赛号</td></tr>
         <tr><td><code>Age</code></td><td>年龄</td><td>Age 年龄</td></tr>
         <tr><td><code>Gender</code></td><td>Sex, 性别</td><td>Gender 性别</td></tr>
         <tr><td><code>Level</code></td><td>级别</td><td>Level 级别</td></tr>
         <tr><td><code>Event</code></td><td>项目, Form</td><td>Event/项目</td></tr>
-        <tr><td><code>Category</code></td><td>Type, Weapon, 类别</td><td>Checkbox: Open Hand, Short, Long, or Other (拳术, 短, 长, 其他 also work)</td></tr>
+        <tr><td><code>Category</code></td><td>Type, Weapon, 类别</td><td>Form card only — checkbox: Open Hand, Short, Long, or Other (拳术, 短, 长, 其他 also work)</td></tr>
+        <tr><td><code>Weight</code></td><td>体重, Weight Class</td><td>Combat card only — Weight 体重</td></tr>
       </table>
       </div>
       <p class="hint" style="margin-top:8px">Instead of <code>Category</code>, you can use separate <code>Open Hand</code>, <code>Short</code>, <code>Long</code>, <code>Other</code> columns marked with x, yes, or 1.</p>
+      <p class="hint" style="margin-top:8px">With no <code>Division</code> column, a row with a weight gets the combat card and everything else gets the form card. The <strong>Card type</strong> control below overrides this for the whole sheet.</p>
     </details>
 
     <div>
       <h2>Layout</h2>
       <div class="row">
+        <label>Card type <select id="cardtype">
+          <option value="auto" selected>From spreadsheet</option>
+          <option value="form">Form Divisions 套路组</option>
+          <option value="combat">Combat Divisions 对抗组</option>
+        </select></label>
         <label>Paper <select id="paper"><option value="letter">US Letter</option><option value="a4">A4</option></select></label>
         <label>Cards per page <select id="perpage"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option></select></label>
         <label>Extra blank cards <input type="number" id="blanks" min="0" max="200" value="0"></label>

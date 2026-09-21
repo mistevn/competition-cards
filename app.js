@@ -2,13 +2,15 @@ const $ = (id) => document.getElementById(id);
 let rows = [];
 
 const ALIASES = {
+  division: ['division', 'cardtype', 'card', 'divisiontype', 'group', '组别', '分组'],
   name: ['name', '姓名', 'competitor', 'fullname', 'competitorname'],
   id: ['id', 'id#', 'idno', 'idnumber', '参赛号', 'number', 'no', 'bib', 'competitorid'],
   age: ['age', '年龄'],
   gender: ['gender', 'sex', '性别'],
   level: ['level', '级别', 'rank'],
   event: ['event', '项目', 'form', 'eventname'],
-  category: ['category', 'type', 'weapon', 'weapontype', '类别', 'division', 'formtype'],
+  weight: ['weight', '体重', 'wt', 'weightclass', 'weightdivision', '体重级别', '级别体重'],
+  category: ['category', 'type', 'weapon', 'weapontype', '类别', 'formtype'],
   open: ['openhand', 'open', '拳术'],
   short: ['short', 'shortweapon', '短器械'],
   long: ['long', 'longweapon', '长器械'],
@@ -16,6 +18,15 @@ const ALIASES = {
 };
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[\s_\-\/\.:()（）]/g, '');
 const truthy = (v) => /^(x|✓|✔|yes|y|true|1|是)$/i.test(String(v ?? '').trim());
+
+// '', 'form' or 'combat' — '' means the row did not say.
+function divisionOf(value) {
+  const v = norm(value);
+  if (!v) return '';
+  if (/combat|spar|fight|对抗|散打|散手|sanda|sanshou|推手|pushhands|tuishou/.test(v)) return 'combat';
+  if (/form|taolu|套路|routine/.test(v)) return 'form';
+  return '';
+}
 
 function mapRow(raw) {
   const byKey = {};
@@ -31,8 +42,20 @@ function mapRow(raw) {
     long: /long|长/.test(cat) || truthy(pick('long')),
     other: /other|其他|其它/.test(cat) || truthy(pick('other'))
   };
-  return { name: pick('name'), id: pick('id'), age: pick('age'), gender: pick('gender'),
-           level: pick('level'), event: pick('event'), checks };
+  const weight = pick('weight');
+  // No Division column? A weight means combat, a category or a ticked box means form.
+  let division = divisionOf(pick('division'));
+  if (!division && weight) division = 'combat';
+  if (!division && (cat || checks.open || checks.short || checks.long || checks.other)) division = 'form';
+  return { division, name: pick('name'), id: pick('id'), age: pick('age'), gender: pick('gender'),
+           level: pick('level'), event: pick('event'), weight, checks };
+}
+
+// The card each row prints on, given the Card type control.
+function typeOf(r) {
+  const mode = $('cardtype').value;
+  if (mode !== 'auto') return mode;
+  return r.division || 'form';
 }
 
 function loadWorkbook(wb) {
@@ -73,14 +96,15 @@ $('usePaste').addEventListener('click', () => {
 
 $('sample').addEventListener('click', () => {
   const data = [
-    ['Name', 'ID', 'Age', 'Gender', 'Level', 'Event', 'Category'],
-    ['Li Wei 李伟', '101', '34', 'M', 'Intermediate', 'Bagua Zhang 八卦掌', 'Open Hand'],
-    ['Sarah Chen', '102', '27', 'F', 'Advanced', 'Jian 剑', 'Short'],
-    ['Marcus Hall', '103', '45', 'M', 'Beginner', 'Gun 棍', 'Long'],
-    ['Zhang Min 张敏', '104', '16', 'F', 'Advanced', 'Chang Quan 长拳', 'Open Hand'],
-    ['Priya Nair', '105', '52', 'F', 'Intermediate', 'Rope Dart 绳镖', 'Other'],
-    ['Tom Ortiz', '106', '38', 'M', 'Beginner', 'Dao 刀', 'Short'],
-    ['Wang Jun 王军', '107', '61', 'M', 'Masters', 'Qiang 枪', 'Long']
+    ['Division', 'Name', 'ID', 'Age', 'Gender', 'Level', 'Event', 'Category', 'Weight'],
+    ['Form', 'Li Wei 李伟', '101', '34', 'M', 'Intermediate', 'Bagua Zhang 八卦掌', 'Open Hand', ''],
+    ['Form', 'Sarah Chen', '102', '27', 'F', 'Advanced', 'Jian 剑', 'Short', ''],
+    ['Form', 'Marcus Hall', '103', '45', 'M', 'Beginner', 'Gun 棍', 'Long', ''],
+    ['Form', 'Zhang Min 张敏', '104', '16', 'F', 'Advanced', 'Chang Quan 长拳', 'Open Hand', ''],
+    ['Form', 'Priya Nair', '105', '52', 'F', 'Intermediate', 'Rope Dart 绳镖', 'Other', ''],
+    ['Combat', 'Tom Ortiz', '106', '38', 'M', 'Beginner', 'Sanda 散打', '', '75 kg'],
+    ['Combat', 'Wang Jun 王军', '107', '29', 'M', 'Advanced', 'Sanda 散打', '', '65 kg'],
+    ['Combat', 'Ana Ruiz', '108', '31', 'F', 'Intermediate', 'Push Hands 推手', '', '56 kg']
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   const wb = XLSX.utils.book_new();
@@ -96,7 +120,7 @@ $('clear').addEventListener('click', () => {
   render();
 });
 
-['paper', 'perpage', 'blanks'].forEach(id => $(id).addEventListener('input', render));
+['cardtype', 'paper', 'perpage', 'blanks'].forEach(id => $(id).addEventListener('input', render));
 
 $('print').addEventListener('click', () => window.print());
 
@@ -110,17 +134,10 @@ function field(en, zh, val) {
 }
 const sq = (on) => `<span class="sq" aria-hidden="true">${on ? '✓' : ''}</span>`;
 
-function cardHTML(r, lastRow) {
+// Form divisions: Event across the card, then the Open Hand / Weapon boxes.
+function formRows(r) {
   const c = r.checks;
-  return `<article class="card${lastRow ? ' last-row' : ''}">
-    <div>
-      <div class="title">Competition Card参赛卡</div>
-      <div class="sub">(Form Divisions 套路组)</div>
-    </div>
-    <div class="fields">
-      <div class="r1">${field('Name', '姓名', r.name)}${field('ID#', '参赛号', r.id)}</div>
-      <div class="r2">${field('Age', '年龄', r.age)}${field('Gender', '性别', r.gender)}${field('Level', '级别', r.level)}</div>
-      <div class="line"><div class="label-row"><span class="lab">Event/项目</span><span class="val" title="${esc(r.event)}">${esc(r.event)}</span></div></div>
+  return `<div class="line"><div class="label-row"><span class="lab">Event/项目</span><span class="val" title="${esc(r.event)}">${esc(r.event)}</span></div></div>
       <div class="boxes">
         <span class="box">${sq(c.open)} Open Hand</span>
         <span class="sep">|</span>
@@ -128,27 +145,52 @@ function cardHTML(r, lastRow) {
         <span class="box">${sq(c.short)} Short</span>
         <span class="box">${sq(c.long)} Long</span>
         <span class="box">${sq(c.other)} Other</span>
-      </div>
+      </div>`;
+}
+
+// Combat divisions: Event shares its row with Weight, and there are no boxes.
+function combatRows(r) {
+  return `<div class="r3">${field('Event', '项目', r.event)}${field('Weight', '体重', r.weight)}</div>`;
+}
+
+function cardHTML(r, type, lastRow) {
+  const combat = type === 'combat';
+  return `<article class="card${lastRow ? ' last-row' : ''}">
+    <div>
+      <div class="title">Competition Card参赛卡</div>
+      <div class="sub">(${combat ? 'Combat Divisions 对抗组' : 'Form Divisions 套路组'})</div>
+    </div>
+    <div class="fields">
+      <div class="r1">${field('Name', '姓名', r.name)}${field('ID#', '参赛号', r.id)}</div>
+      <div class="r2">${field('Age', '年龄', r.age)}${field('Gender', '性别', r.gender)}${field('Level', '级别', r.level)}</div>
+      ${combat ? combatRows(r) : formRows(r)}
     </div>
   </article>`;
 }
 
+const BLANK = { division: '', name: '', id: '', age: '', gender: '', level: '', event: '', weight: '', checks: {} };
+
 function render() {
+  const mode = $('cardtype').value;
   const paper = $('paper').value;
   const per = parseInt($('perpage').value, 10);
   const blanks = Math.max(0, Math.min(200, parseInt($('blanks').value, 10) || 0));
   $('page-rule').textContent = `@page { size: ${paper === 'a4' ? 'A4' : 'letter'}; margin: 0; }`;
 
-  const blank = { name: '', id: '', age: '', gender: '', level: '', event: '', checks: {} };
-  let cards = rows.concat(Array(blanks).fill(blank));
-  if (!cards.length) cards = Array(per).fill(blank);
+  // Blank cards follow the control; on auto they follow whichever card the sheet mostly uses.
+  const combatRowCount = rows.filter(r => typeOf(r) === 'combat').length;
+  const blankType = mode !== 'auto' ? mode : (combatRowCount > rows.length / 2 ? 'combat' : 'form');
+
+  let cards = rows.map(r => [r, typeOf(r)]);
+  for (let i = 0; i < blanks; i++) cards.push([BLANK, blankType]);
+  if (!cards.length) cards = Array(per).fill([BLANK, blankType]);
 
   const out = [];
   for (let i = 0; i < cards.length; i += per) {
     const chunk = cards.slice(i, i + per);
     while (chunk.length < per) chunk.push(null);
     const cols = 2, lastRowStart = per - cols;
-    const inner = chunk.map((r, j) => r ? cardHTML(r, j >= lastRowStart) : `<div class="card${j >= lastRowStart ? ' last-row' : ''}" style="border-color:transparent"></div>`).join('');
+    const inner = chunk.map((c, j) => c ? cardHTML(c[0], c[1], j >= lastRowStart) : `<div class="card${j >= lastRowStart ? ' last-row' : ''}" style="border-color:transparent"></div>`).join('');
     out.push(`<section class="page ${paper} up${per}" aria-label="Page ${out.length + 1}">${inner}</section>`);
   }
   $('pages').innerHTML = out.join('');
